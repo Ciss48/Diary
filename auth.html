@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Diary — Sign In</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Lora:ital,wght@0,400;0,500;1,400&family=EB+Garamond:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body data-page="auth">
+
+  <div class="auth-wrapper">
+    <div class="auth-card paper-card">
+
+      <div class="auth-logo">
+        My <span>Diary</span>
+      </div>
+      <p class="auth-tagline">Your private space to write, reflect, and grow.</p>
+
+      <!-- Tabs -->
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="tab-signin">Sign In</button>
+        <button class="auth-tab" id="tab-signup">Sign Up</button>
+      </div>
+
+      <!-- Sign In form -->
+      <form class="auth-form" id="form-signin">
+        <div class="auth-field">
+          <label for="signin-email">Email</label>
+          <input type="email" id="signin-email" placeholder="you@example.com" required autocomplete="email" />
+        </div>
+        <div class="auth-field">
+          <label for="signin-password">Password</label>
+          <input type="password" id="signin-password" placeholder="••••••••" required autocomplete="current-password" />
+        </div>
+        <div class="auth-error" id="signin-error"></div>
+        <button type="submit" class="btn btn-primary auth-submit">Sign In</button>
+      </form>
+
+      <!-- Sign Up form (hidden by default) -->
+      <form class="auth-form" id="form-signup" style="display:none;">
+        <div class="auth-field">
+          <label for="signup-email">Email</label>
+          <input type="email" id="signup-email" placeholder="you@example.com" required autocomplete="email" />
+        </div>
+        <div class="auth-field">
+          <label for="signup-password">Password</label>
+          <input type="password" id="signup-password" placeholder="••••••••" required autocomplete="new-password" />
+        </div>
+        <div class="auth-field">
+          <label for="signup-confirm">Confirm Password</label>
+          <input type="password" id="signup-confirm" placeholder="••••••••" required autocomplete="new-password" />
+        </div>
+        <div class="auth-error" id="signup-error"></div>
+        <button type="submit" class="btn btn-primary auth-submit">Create Account</button>
+      </form>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

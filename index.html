@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Diary</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Lora:ital,wght@0,400;0,500;1,400&family=EB+Garamond:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body data-page="index">
+
+  <div class="container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="app-title">My <span>Diary</span></div>
+      <button class="btn" id="btn-history">History &rarr;</button>
+    </header>
+
+    <!-- Paper card -->
+    <div class="paper-card page-container">
+      <!-- Date -->
+      <div class="date-display" id="date-display">Loading…</div>
+
+      <!-- Photo Strip -->
+      <div class="photo-strip" id="photo-strip"></div>
+
+      <!-- Todo Section -->
+      <div class="todo-section" id="todo-section"></div>
+
+      <!-- Two-panel editor layout -->
+      <div class="editor-layout" id="editor-layout">
+
+        <!-- Left: original writing -->
+        <div class="writing-panel">
+          <div class="panel-label">Original</div>
+          <div class="lined-editor">
+            <div class="line-numbers" id="line-numbers-orig"></div>
+            <textarea
+              id="diary-content"
+              class="diary-textarea"
+              placeholder="Write about your day…"
+              spellcheck="true"
+              autofocus
+            ></textarea>
+          </div>
+        </div>
+
+        <!-- Right: AI suggestion panel -->
+        <div class="ai-box suggestion-panel">
+          <div class="suggestion-panel-header">
+            <div class="panel-label">&#10024; AI Suggestion</div>
+            <button class="ai-box-close" title="Close">&times;</button>
+          </div>
+          <div class="lined-editor">
+            <div class="line-numbers" id="line-numbers-ai"></div>
+            <div class="ai-improved-text"></div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- AI bottom panel: What Changed + Writing Analysis -->
+      <div class="ai-bottom-panel">
+        <div class="ai-bottom-col">
+          <div class="ai-section-label">What Changed</div>
+          <ul class="ai-changes-list"></ul>
+        </div>
+        <div class="ai-bottom-col">
+          <div class="ai-section-label">Writing Analysis</div>
+          <ul class="ai-analysis-list"></ul>
+        </div>
+      </div>
+
+      <!-- Save indicator -->
+      <div class="save-indicator" id="save-indicator"></div>
+
+      <!-- Actions -->
+      <div class="actions-row">
+        <button class="btn btn-ai" disabled>&#10024; Suggest better English</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Supabase CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

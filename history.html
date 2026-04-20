@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Diary — History</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Lora:ital,wght@0,400;0,500;1,400&family=EB+Garamond:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body data-page="history">
+
+  <div class="container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="app-title">My <span>Diary</span></div>
+      <button class="btn btn-back" id="btn-back">&larr; Today</button>
+    </header>
+
+    <!-- History header row -->
+    <div class="history-header">
+      <div class="history-title">Past Entries</div>
+
+      <!-- View toggle -->
+      <div class="view-toggle">
+        <button class="toggle-btn active" id="toggle-calendar">Calendar</button>
+        <button class="toggle-btn" id="toggle-list">List</button>
+      </div>
+    </div>
+
+    <!-- Calendar View -->
+    <div id="calendar-view">
+      <div class="paper-card">
+        <div class="calendar-nav">
+          <button class="calendar-nav-btn" id="cal-prev">&lsaquo;</button>
+          <span class="calendar-month-label" id="calendar-month-label"></span>
+          <button class="calendar-nav-btn" id="cal-next">&rsaquo;</button>
+        </div>
+        <div class="calendar-grid" id="calendar-grid"></div>
+      </div>
+    </div>
+
+    <!-- List View (hidden by default) -->
+    <div id="list-view" style="display:none;">
+      <div id="entry-list" class="entry-list"></div>
+    </div>
+
+  </div>
+
+  <!-- Supabase CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
