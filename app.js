@@ -119,7 +119,7 @@ async function upsertEntry(date, content) {
   if (!user) throw new Error('Not authenticated')
   const { data, error } = await db
     .from('diary_entries')
-    .upsert({ date, content, user_id: user.id }, { onConflict: 'date' })
+    .upsert({ date, content, user_id: user.id }, { onConflict: 'user_id,date' })
     .select()
     .single()
   if (error) throw error
@@ -131,7 +131,7 @@ async function saveAiSuggestion(date, result) {
   if (!user) throw new Error('Not authenticated')
   const { error } = await db
     .from('diary_entries')
-    .upsert({ date, ai_suggestion: JSON.stringify(result), user_id: user.id }, { onConflict: 'date' })
+    .upsert({ date, ai_suggestion: JSON.stringify(result), user_id: user.id }, { onConflict: 'user_id,date' })
   if (error) throw error
 }
 
