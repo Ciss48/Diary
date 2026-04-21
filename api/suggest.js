@@ -13,23 +13,25 @@ export default async function handler(req, res) {
 Please improve the following diary text to make it more natural, grammatically correct, and fluent in English.
 
 Rules:
-- Keep the same meaning and personal voice
+- Keep EXACTLY the same meaning, content, and length as the original
+- Do NOT add new information, new sentences, or new ideas that were not in the original
+- Do NOT expand or elaborate on anything — only fix what is already written
 - Fix grammar errors
-- Make it sound more natural
-- Keep it informal/personal (it's a diary)
+- Make it sound more natural and personal (it's a diary)
+- If the original is short, the improved version must also be short
 
 Original text:
 ${text}
 
 Format your response as:
 IMPROVED:
-[improved text here]
+[improved text here — same length and content as original, just better grammar and phrasing]
 
 WHAT I CHANGED:
-[3-5 bullet points listing the specific edits made]
+[List only the actual edits made — as few or as many bullet points as genuinely needed. If only 1 thing was changed, write 1 bullet. If the text was already good and needed minimal edits, say so briefly.]
 
 WRITING ANALYSIS:
-[3-5 bullet points analyzing the weaknesses in the original text — what grammar rules were broken, what word choices were unnatural, what recurring patterns of mistakes exist. Write as constructive feedback to help the user learn, not just repeat the fixes.]`
+[Analyze only the real weaknesses found in the original. If the text was mostly correct, say so and give 1-2 brief notes. Do not pad with generic feedback if there is nothing meaningful to add.]`
 
   const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
