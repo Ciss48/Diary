@@ -131,7 +131,7 @@ async function saveAiSuggestion(date, result) {
   if (!user) throw new Error('Not authenticated')
   const { error } = await db
     .from('diary_entries')
-    .upsert({ date, ai_suggestion: JSON.stringify(result), user_id: user.id }, { onConflict: 'user_id,date' })
+    .upsert({ date, ai_suggestion: result !== null ? JSON.stringify(result) : null, user_id: user.id }, { onConflict: 'user_id,date' })
   if (error) throw error
 }
 
@@ -211,6 +211,22 @@ async function toggleTodo(todoId, completed) {
   if (error) throw error
 }
 
+async function deleteTodo(todoId) {
+  const { error } = await db
+    .from('entry_todos')
+    .delete()
+    .eq('id', todoId)
+  if (error) throw error
+}
+
+async function updateTodo(todoId, task) {
+  const { error } = await db
+    .from('entry_todos')
+    .update({ task, updated_at: new Date().toISOString() })
+    .eq('id', todoId)
+  if (error) throw error
+}
+
 // ── Todo Section UI ──────────────────────────────────────────────────────────
 
 async function initTodoSection(sectionEl, date) {
@@ -273,20 +289,75 @@ async function initTodoSection(sectionEl, date) {
     text.className = 'todo-text'
     text.textContent = todo.task
 
+    const del = document.createElement('span')
+    del.className = 'todo-delete'
+    del.textContent = '×'
+    del.title = 'Delete task'
+
     li.appendChild(check)
     li.appendChild(text)
+    li.appendChild(del)
 
-    li.addEventListener('click', async () => {
+    // Circle click → toggle completion
+    check.addEventListener('click', (e) => {
+      e.stopPropagation()
       li.style.pointerEvents = 'none'
+      toggleTodo(todo.id, !todo.completed)
+        .then(() => {
+          todos = todos.map(t => t.id === todo.id ? { ...t, completed: !t.completed } : t)
+          render()
+        })
+        .catch(() => {
+          showToast('Could not update task', 'error')
+          li.style.pointerEvents = ''
+        })
+    })
+
+    // Text click → edit inline
+    text.addEventListener('click', (e) => {
+      e.stopPropagation()
+      const input = document.createElement('input')
+      input.type = 'text'
+      input.className = 'todo-add-input'
+      input.value = todo.task
+      text.replaceWith(input)
+      input.focus()
+      input.select()
+
+      let committed = false
+      async function commitEdit() {
+        if (committed) return
+        committed = true
+        const newTask = input.value.trim()
+        if (!newTask || newTask === todo.task) { render(); return }
+        try {
+          await updateTodo(todo.id, newTask)
+          todos = todos.map(t => t.id === todo.id ? { ...t, task: newTask } : t)
+          render()
+        } catch (_) {
+          showToast('Could not update task', 'error')
+          render()
+        }
+      }
+      input.addEventListener('keydown', e => {
+        if (e.key === 'Enter') commitEdit()
+        if (e.key === 'Escape') { committed = true; render() }
+      })
+      input.addEventListener('blur', commitEdit)
+    })
+
+    // Delete button
+    del.addEventListener('click', async (e) => {
+      e.stopPropagation()
       try {
-        await toggleTodo(todo.id, !todo.completed)
-        todos = todos.map(t => t.id === todo.id ? { ...t, completed: !t.completed } : t)
+        await deleteTodo(todo.id)
+        todos = todos.filter(t => t.id !== todo.id)
         render()
-      } catch (err) {
-        showToast('Could not update task', 'error')
-        li.style.pointerEvents = ''
+      } catch (_) {
+        showToast('Could not delete task', 'error')
       }
     })
+
     return li
   }
 
@@ -665,7 +736,7 @@ function renderAiBox(container, result) {
   if (aiLineNums && improvedEl) updateLineNumbers(improvedEl, aiLineNums)
 }
 
-function setupAiButton(container, getTextFn, onSuggestionReady) {
+function setupAiButton(container, getTextFn, onSuggestionReady, onClose) {
   const btn      = container.querySelector('.btn-ai')
   const textarea = container.querySelector('.diary-textarea')
   const aiBox    = container.querySelector('.ai-box')
@@ -694,7 +765,10 @@ function setupAiButton(container, getTextFn, onSuggestionReady) {
   })
 
   if (closeBtn) {
-    closeBtn.addEventListener('click', () => deactivateSplit(container))
+    closeBtn.addEventListener('click', () => {
+      deactivateSplit(container)
+      if (onClose) onClose()
+    })
   }
 
   if (textarea) {
@@ -781,10 +855,12 @@ async function initIndexPage() {
   const lineNumsOrig = document.getElementById('line-numbers-orig')
   if (lineNumsOrig) initLineNumbers(textarea, lineNumsOrig)
 
-  // AI button — auto-save suggestion when generated
+  // AI button — auto-save suggestion when generated, clear when closed
   if (container) {
     setupAiButton(container, () => textarea.value, async (result) => {
       try { await saveAiSuggestion(today, result) } catch (_) {}
+    }, async () => {
+      try { await saveAiSuggestion(today, null) } catch (_) {}
     })
   }
 
@@ -1086,24 +1162,299 @@ async function initEntryPage() {
   const lineNumsOrig = document.getElementById('line-numbers-orig')
   if (lineNumsOrig) initLineNumbers(textarea, lineNumsOrig)
 
-  // AI button — auto-save suggestion when generated
+  // AI button — auto-save suggestion when generated, clear when closed
   if (container) {
     setupAiButton(container, () => textarea.value, async (result) => {
       try { await saveAiSuggestion(currentEntry.date, result) } catch (_) {}
+    }, async () => {
+      try { await saveAiSuggestion(currentEntry.date, null) } catch (_) {}
     })
   }
 }
 
-// ── Sign-Out Button ──────────────────────────────────────────────────────────
+// ── Profile Helpers ──────────────────────────────────────────────────────────
 
-function addSignOutButton() {
+async function getProfile(userId) {
+  const { data, error } = await db
+    .from('profiles')
+    .select('*')
+    .eq('id', userId)
+    .maybeSingle()
+  if (error) throw error
+  return data
+}
+
+async function updateProfile(userId, fields) {
+  const { error } = await db
+    .from('profiles')
+    .update({ ...fields, updated_at: new Date().toISOString() })
+    .eq('id', userId)
+  if (error) throw error
+}
+
+async function ensureProfile(user) {
+  const existing = await getProfile(user.id)
+  if (!existing) {
+    // First sign-in: insert a blank row (INSERT policy applies)
+    const { error } = await db
+      .from('profiles')
+      .insert({ id: user.id })
+    if (error && error.code !== '23505') throw error // ignore duplicate-key race
+  }
+  return existing || {}
+}
+
+async function uploadAvatar(userId, file) {
+  const blob = await compressImage(file, 256, 0.85)
+  const storagePath = `${userId}/avatar`
+  const { error } = await db.storage
+    .from('diary-images')
+    .upload(storagePath, blob, { contentType: 'image/jpeg', upsert: true })
+  if (error) throw error
+  // Return the storage path; callers resolve a fresh signed URL when displaying
+  return storagePath
+}
+
+async function getAvatarUrl(storagePath) {
+  if (!storagePath) return null
+  // Already a full URL (legacy or external)
+  if (storagePath.startsWith('http')) return storagePath
+  const { data } = await db.storage
+    .from('diary-images')
+    .createSignedUrl(storagePath, 3600 * 24) // 24-hour URL
+  return data?.signedUrl || null
+}
+
+// ── User Menu (avatar + dropdown) ────────────────────────────────────────────
+
+async function addSignOutButton() {
   const header = document.querySelector('.app-header')
-  if (!header || header.querySelector('.btn-signout')) return
-  const btn = document.createElement('button')
-  btn.className = 'btn btn-signout'
-  btn.textContent = 'Sign Out'
-  btn.addEventListener('click', signOut)
-  header.appendChild(btn)
+  if (!header || header.querySelector('.user-menu')) return
+
+  const user = window._currentUser
+  if (!user) return
+
+  let profile = {}
+  try { profile = await ensureProfile(user) } catch (_) {}
+
+  const emailPrefix = user.email ? user.email.split('@')[0] : 'User'
+  const displayName = profile.display_name || emailPrefix
+
+  // Resolve avatar storage path → signed URL
+  let avatarDisplayUrl = null
+  if (profile.avatar_url) {
+    try { avatarDisplayUrl = await getAvatarUrl(profile.avatar_url) } catch (_) {}
+  }
+
+  const menu = document.createElement('div')
+  menu.className = 'user-menu'
+
+  const trigger = document.createElement('button')
+  trigger.className = 'user-menu-trigger'
+  trigger.setAttribute('aria-haspopup', 'true')
+  trigger.setAttribute('aria-expanded', 'false')
+
+  const avatar = document.createElement('div')
+  avatar.className = 'user-avatar'
+  if (avatarDisplayUrl) {
+    const img = document.createElement('img')
+    img.src = avatarDisplayUrl
+    img.alt = displayName
+    avatar.appendChild(img)
+  } else {
+    avatar.textContent = displayName[0].toUpperCase()
+  }
+
+  const nameEl = document.createElement('span')
+  nameEl.className = 'user-menu-name'
+  nameEl.textContent = displayName
+
+  const chevron = document.createElement('span')
+  chevron.className = 'user-menu-chevron'
+  chevron.innerHTML = '&#8964;'
+
+  trigger.appendChild(avatar)
+  trigger.appendChild(nameEl)
+  trigger.appendChild(chevron)
+
+  const dropdown = document.createElement('div')
+  dropdown.className = 'user-dropdown'
+
+  const editItem = document.createElement('button')
+  editItem.className = 'user-dropdown-item'
+  editItem.textContent = 'Edit Profile'
+  editItem.addEventListener('click', () => {
+    dropdown.classList.remove('open')
+    trigger.setAttribute('aria-expanded', 'false')
+    openProfileModal(user, profile, avatarDisplayUrl, async (updated, newAvatarDisplayUrl) => {
+      profile = updated
+      avatarDisplayUrl = newAvatarDisplayUrl
+      const newName = updated.display_name || emailPrefix
+      nameEl.textContent = newName
+      avatar.innerHTML = ''
+      if (newAvatarDisplayUrl) {
+        const img = document.createElement('img')
+        img.src = newAvatarDisplayUrl
+        img.alt = newName
+        avatar.appendChild(img)
+      } else {
+        avatar.textContent = newName[0].toUpperCase()
+      }
+    })
+  })
+
+  const signOutItem = document.createElement('button')
+  signOutItem.className = 'user-dropdown-item user-dropdown-item--danger'
+  signOutItem.textContent = 'Sign Out'
+  signOutItem.addEventListener('click', signOut)
+
+  dropdown.appendChild(editItem)
+  dropdown.appendChild(signOutItem)
+
+  menu.appendChild(trigger)
+  menu.appendChild(dropdown)
+  header.appendChild(menu)
+
+  trigger.addEventListener('click', (e) => {
+    e.stopPropagation()
+    const isOpen = dropdown.classList.toggle('open')
+    trigger.setAttribute('aria-expanded', String(isOpen))
+  })
+
+  document.addEventListener('click', () => {
+    dropdown.classList.remove('open')
+    trigger.setAttribute('aria-expanded', 'false')
+  })
+}
+
+// ── Profile Modal ────────────────────────────────────────────────────────────
+
+function openProfileModal(user, profile, avatarDisplayUrl, onSave) {
+  // Remove any existing modal
+  document.getElementById('profile-modal')?.remove()
+
+  const overlay = document.createElement('div')
+  overlay.id = 'profile-modal'
+  overlay.className = 'modal-overlay'
+
+  const card = document.createElement('div')
+  card.className = 'modal-card paper-card'
+
+  card.innerHTML = `
+    <div class="modal-header">
+      <h2 class="modal-title">Edit Profile</h2>
+      <button class="modal-close" aria-label="Close">&times;</button>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-avatar-row">
+        <div class="modal-avatar-preview" id="modal-avatar-preview">
+          ${avatarDisplayUrl
+            ? `<img src="${avatarDisplayUrl}" alt="Avatar">`
+            : `<span>${(profile.display_name || user.email || 'U')[0].toUpperCase()}</span>`}
+        </div>
+        <div>
+          <label class="modal-avatar-btn btn" id="modal-avatar-label">
+            Change Photo
+            <input type="file" id="modal-avatar-input" accept="image/*" style="display:none">
+          </label>
+          <div class="modal-avatar-hint">Square image recommended</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <div class="auth-field">
+        <label for="modal-display-name">Display Name</label>
+        <input type="text" id="modal-display-name" value="${profile.display_name || ''}" placeholder="How should we call you?">
+      </div>
+    </div>
+
+    <div class="modal-section modal-section--password">
+      <div class="modal-section-title">Change Password</div>
+      <div class="auth-field">
+        <label for="modal-new-password">New Password</label>
+        <input type="password" id="modal-new-password" placeholder="Leave blank to keep current">
+      </div>
+    </div>
+
+    <div class="modal-error" id="modal-error"></div>
+
+    <div class="modal-actions">
+      <button class="btn" id="modal-cancel">Cancel</button>
+      <button class="btn btn-primary" id="modal-save">Save</button>
+    </div>
+  `
+
+  overlay.appendChild(card)
+  document.body.appendChild(overlay)
+
+  // Force reflow then animate in
+  requestAnimationFrame(() => overlay.classList.add('open'))
+
+  let pendingAvatarFile = null
+  let pendingAvatarStoragePath = profile.avatar_url || null  // storage path
+  let pendingAvatarDisplayUrl  = avatarDisplayUrl || null    // resolved signed URL
+
+  const avatarInput = card.querySelector('#modal-avatar-input')
+  const avatarPreview = card.querySelector('#modal-avatar-preview')
+
+  avatarInput.addEventListener('change', () => {
+    const file = avatarInput.files[0]
+    if (!file) return
+    pendingAvatarFile = file
+    pendingAvatarDisplayUrl = URL.createObjectURL(file)
+    avatarPreview.innerHTML = `<img src="${pendingAvatarDisplayUrl}" alt="Preview">`
+  })
+
+  function close() {
+    overlay.classList.remove('open')
+    setTimeout(() => overlay.remove(), 220)
+  }
+
+  card.querySelector('.modal-close').addEventListener('click', close)
+  card.querySelector('#modal-cancel').addEventListener('click', close)
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) close() })
+
+  card.querySelector('#modal-save').addEventListener('click', async () => {
+    const saveBtn = card.querySelector('#modal-save')
+    const errorEl = card.querySelector('#modal-error')
+    const displayName = card.querySelector('#modal-display-name').value.trim()
+    const newPassword = card.querySelector('#modal-new-password').value
+
+    errorEl.textContent = ''
+    saveBtn.disabled = true
+    saveBtn.textContent = 'Saving…'
+
+    try {
+      // Upload avatar if changed; returns storage path
+      if (pendingAvatarFile) {
+        pendingAvatarStoragePath = await uploadAvatar(user.id, pendingAvatarFile)
+        // pendingAvatarDisplayUrl already set to object URL from the change handler
+      }
+
+      // Update profile row (store storage path, not signed URL)
+      await updateProfile(user.id, {
+        display_name: displayName || null,
+        avatar_url: pendingAvatarStoragePath || null
+      })
+
+      // Update password if provided
+      if (newPassword) {
+        const { error } = await db.auth.updateUser({ password: newPassword })
+        if (error) throw error
+      }
+
+      const updated = { ...profile, display_name: displayName || null, avatar_url: pendingAvatarStoragePath || null }
+      onSave(updated, pendingAvatarDisplayUrl)
+      showToast('Profile saved!', 'success')
+      close()
+    } catch (err) {
+      errorEl.textContent = err.message
+      saveBtn.disabled = false
+      saveBtn.textContent = 'Save'
+    }
+  })
 }
 
 // ── Page: Auth ───────────────────────────────────────────────────────────────

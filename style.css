@@ -56,6 +56,7 @@ a:hover {
   max-width: 720px;
   margin: 0 auto;
   padding: 0 24px;
+  transition: max-width 0.35s ease;
 }
 
 /* ── Header ── */
@@ -74,6 +75,9 @@ a:hover {
   font-weight: 700;
   color: var(--accent);
   letter-spacing: 0.02em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .app-title span {
@@ -296,6 +300,7 @@ a:hover {
 .suggestion-panel {
   flex: 0 0 0;
   width: 0;
+  height: 0;
   overflow: hidden;
   opacity: 0;
   padding-left: 0;
@@ -311,6 +316,7 @@ a:hover {
 .editor-layout.split .suggestion-panel {
   flex: 1 1 0;
   width: auto;
+  height: auto;
   overflow: visible;
   opacity: 1;
   padding-left: 24px;
@@ -694,21 +700,246 @@ a:hover {
   .ai-improved-text { font-size: 14px; }
 }
 
-/* ── Sign-Out Button ── */
-.btn-signout {
-  font-size: 0.78rem;
-  padding: 5px 12px;
-  color: var(--ink-light);
+/* ── User Menu ── */
+.user-menu {
+  position: relative;
+}
+
+.user-menu-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   background: transparent;
   border: 1px solid var(--line-color);
-  border-radius: 4px;
+  border-radius: 20px;
+  padding: 4px 10px 4px 4px;
   cursor: pointer;
   font-family: 'Lora', serif;
-  transition: color 0.15s, border-color 0.15s;
+  font-size: 0.85rem;
+  color: var(--ink-mid);
+  transition: border-color 0.15s, color 0.15s;
 }
-.btn-signout:hover {
-  color: var(--accent);
+
+.user-menu-trigger:hover {
   border-color: var(--accent-soft);
+  color: var(--ink-dark);
+}
+
+.user-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--bg-paper);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Playfair Display', serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.user-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.user-menu-name {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-menu-chevron {
+  font-size: 0.7rem;
+  opacity: 0.55;
+  line-height: 1;
+}
+
+.user-dropdown {
+  display: none;
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  background: var(--bg-paper);
+  border: 1px solid var(--line-color);
+  border-radius: 5px;
+  box-shadow: 0 4px 16px var(--shadow);
+  min-width: 160px;
+  z-index: 200;
+  overflow: hidden;
+}
+
+.user-dropdown.open {
+  display: block;
+  animation: fadeInDown 0.15s ease;
+}
+
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.user-dropdown-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 10px 16px;
+  font-family: 'EB Garamond', serif;
+  font-size: 0.95rem;
+  color: var(--ink-dark);
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.user-dropdown-item:hover {
+  background: var(--bg-worn);
+}
+
+.user-dropdown-item--danger {
+  color: #8b3030;
+  border-top: 1px solid var(--line-color);
+}
+
+.user-dropdown-item--danger:hover {
+  background: #f9eded;
+}
+
+/* ── Profile Modal ── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(44, 36, 22, 0.45);
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  opacity: 0;
+  transition: opacity 0.22s ease;
+}
+
+.modal-overlay.open {
+  opacity: 1;
+}
+
+.modal-card {
+  width: 100%;
+  max-width: 440px;
+  padding: 32px 32px 28px;
+  animation: modalSlideIn 0.22s ease;
+}
+
+@keyframes modalSlideIn {
+  from { transform: translateY(10px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.modal-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: var(--ink-dark);
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--ink-light);
+  cursor: pointer;
+  padding: 0 2px;
+}
+
+.modal-close:hover { color: var(--accent); }
+
+.modal-section {
+  margin-bottom: 20px;
+}
+
+.modal-section-title {
+  font-family: 'EB Garamond', serif;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--ink-light);
+  margin-bottom: 12px;
+}
+
+.modal-section--password {
+  border-top: 1px solid var(--line-color);
+  padding-top: 18px;
+}
+
+.modal-avatar-row {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.modal-avatar-preview {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--bg-paper);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Playfair Display', serif;
+  font-size: 1.6rem;
+  font-weight: 600;
+  flex-shrink: 0;
+  overflow: hidden;
+  border: 2px solid var(--line-color);
+}
+
+.modal-avatar-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.modal-avatar-btn {
+  font-size: 0.85rem;
+  padding: 6px 14px;
+  cursor: pointer;
+}
+
+.modal-avatar-hint {
+  font-family: 'Lora', serif;
+  font-size: 0.75rem;
+  color: var(--ink-light);
+  font-style: italic;
+  margin-top: 5px;
+}
+
+.modal-error {
+  font-family: 'Lora', serif;
+  font-size: 0.82rem;
+  color: #b94a48;
+  min-height: 18px;
+  margin-bottom: 14px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
 }
 
 /* ── Auth Page ── */
@@ -991,7 +1222,22 @@ a:hover {
   animation: todoSlideIn 0.18s ease;
 }
 
-.todo-item:hover { opacity: 0.72; }
+.todo-item:hover { opacity: 1; }
+
+.todo-delete {
+  flex-shrink: 0;
+  margin-left: auto;
+  font-size: 1.1rem;
+  line-height: 1;
+  color: var(--ink-light);
+  opacity: 0;
+  cursor: pointer;
+  padding: 0 2px;
+  transition: opacity 0.15s, color 0.15s;
+  user-select: none;
+}
+.todo-item:hover .todo-delete { opacity: 0.5; }
+.todo-delete:hover { color: var(--accent) !important; opacity: 1 !important; }
 
 .todo-check {
   flex-shrink: 0;
